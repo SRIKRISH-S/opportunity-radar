@@ -4,8 +4,8 @@ import os
 def run_demo():
     print("🚀 Launching Opportunity Radar Demo...")
     time.sleep(1)
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print("⚠️  Warning: ANTHROPIC_API_KEY is not set. AI Synthesis and Sentiment agents will run in mock mode.")
+    if not os.getenv("OPENAI_API_KEY"):
+        print("⚠️  Warning: OPENAI_API_KEY is not set. AI Synthesis and Sentiment agents will run in mock mode.")
     time.sleep(1)
     
     print("✅ Configuration checked.")

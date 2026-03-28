@@ -9,4 +9,4 @@ AI-powered FinTech dashboard that pipelines 6 algorithmic agents.
    *If you do not have docker, launch backend with `cd backend && uvicorn main:app --port 8000` and frontend with `cd frontend && python -m http.server 80`*
 4. Access at `http://localhost` (or the respective port you launched on).
 
-Set `ANNOTHROPIC_API_KEY` for Claude model features.
+Set `OPENAI_API_KEY` for OpenAI model features.

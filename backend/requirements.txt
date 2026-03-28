@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pydantic>=2.5.0
-anthropic
+openai
 python-dotenv
 aiohttp
 sse-starlette
