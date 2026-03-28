@@ -1,139 +1,167 @@
-const apiUrl = 'https://opportunity-radar-api.onrender.com/api';
+const API = 'https://opportunity-radar-api.onrender.com/api';
+let allSignals = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadPortfolio();
-
-    // Check if on dashboard page
     const scanBtn = document.getElementById('scan-btn');
     if (scanBtn) {
         scanBtn.addEventListener('click', runScan);
-        document.getElementById('send-btn').addEventListener('click', sendChatMessage);
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendChatMessage();
-        });
-        document.querySelector('.close-btn').addEventListener('click', () => {
-            document.getElementById('signal-modal').style.display = 'none';
-        });
+        document.getElementById('send-btn').addEventListener('click', sendChat);
+        document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
+        document.getElementById('modal-close').addEventListener('click', () => { document.getElementById('signal-modal').style.display = 'none'; });
+        document.getElementById('signal-modal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.style.display = 'none'; });
+        document.querySelectorAll('.pill').forEach(p => p.addEventListener('click', () => {
+            document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+            p.classList.add('active');
+            filterSignals(p.dataset.filter);
+        }));
     }
 });
 
 async function runScan() {
     const btn = document.getElementById('scan-btn');
+    const status = document.getElementById('pipeline-status');
+    const progress = document.getElementById('pipeline-progress');
     btn.disabled = true;
-    btn.innerText = 'Running AI Agents...';
+    btn.innerHTML = '<span class="btn-icon">⏳</span><span>Scanning...</span>';
+    status.textContent = 'Running'; status.className = 'pipeline-status running';
 
-    // Animate pipeline
     const stages = document.querySelectorAll('.stage');
+    const names = ['ingestion', 'filing', 'technical', 'sentiment', 'scoring', 'synthesis'];
     for (let i = 0; i < stages.length; i++) {
         stages[i].classList.add('active');
-        await new Promise(r => setTimeout(r, 400));
-        if (i > 0) stages[i - 1].classList.remove('active');
+        progress.style.width = ((i + 1) / stages.length * 100) + '%';
+        await sleep(350);
+        if (i > 0) { stages[i - 1].classList.remove('active'); stages[i - 1].classList.add('done'); }
     }
     stages[stages.length - 1].classList.remove('active');
+    stages[stages.length - 1].classList.add('done');
 
     try {
-        const response = await fetch(`${apiUrl}/signals/scan`);
-        const signals = await response.json();
-        renderSignals(signals);
-    } catch (err) {
-        console.error('Scan failed', err);
-        document.getElementById('signals-container').innerHTML = '<p class="empty-state">Scan failed to reach backend.</p>';
+        const res = await fetch(`${API}/signals/scan`);
+        allSignals = await res.json();
+        renderSignals(allSignals);
+        status.textContent = `${allSignals.length} opportunities found`; status.className = 'pipeline-status complete';
+    } catch (e) {
+        document.getElementById('signals-container').innerHTML = '<div class="empty-state"><h3>Connection Error</h3><p>Could not reach backend. It may be waking up — try again in 30 seconds.</p></div>';
+        status.textContent = 'Error'; status.className = 'pipeline-status';
     }
-
     btn.disabled = false;
-    btn.innerText = 'Run AI Scan';
+    btn.innerHTML = '<span class="btn-icon">🔍</span><span>Run AI Scan</span>';
 }
 
 function renderSignals(signals) {
-    const container = document.getElementById('signals-container');
-    container.innerHTML = '';
-
-    signals.forEach(sig => {
+    const c = document.getElementById('signals-container');
+    c.innerHTML = '';
+    if (!signals.length) { c.innerHTML = '<div class="empty-state"><h3>No matches</h3></div>'; return; }
+    signals.forEach((s, i) => {
         const card = document.createElement('div');
-        card.className = 'signal-card';
+        card.className = `signal-card ${s.direction.toLowerCase()}`;
+        card.dataset.direction = s.direction;
+        card.dataset.conviction = s.conviction;
+        card.style.animationDelay = `${i * 0.05}s`;
         card.innerHTML = `
-            <div>
-                <div class="signal-header">
-                    <h3>${sig.symbol}</h3>
+            <div class="card-top">
+                <div>
+                    <div class="card-symbol">${s.symbol}</div>
+                    <div class="card-company">${s.company_name}</div>
+                    <div class="card-sector">${s.sector}</div>
                 </div>
-                <div class="signal-meta">
-                    <span class="pill ${sig.direction.toLowerCase()}">${sig.direction}</span>
-                    <span class="pill conviction-${sig.conviction.toLowerCase()}">${sig.conviction} Conviction</span>
-                    ${sig.confluence_boost ? '<span class="pill confluence" style="color:#f59e0b; background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.2);">🔥 Confluence Boost</span>' : ''}
+                <div class="card-score-wrap">
+                    <div class="card-score">${s.score}</div>
+                    <div class="card-score-label">AI Score</div>
                 </div>
-                <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-secondary)">${sig.summary}</p>
             </div>
-            <div class="score-badge">${sig.score}</div>
-        `;
-        card.onclick = () => showModal(sig);
-        container.appendChild(card);
+            <div class="card-tags">
+                <span class="tag ${s.direction.toLowerCase()}">${s.direction}</span>
+                <span class="tag conviction">${s.conviction}</span>
+                ${s.confluence_boost ? '<span class="tag confluence">🔥 Confluence</span>' : ''}
+                ${s.agents_triggered.map(a => `<span class="tag neutral">${a}</span>`).join('')}
+            </div>
+            <div class="card-metrics">
+                <div class="metric"><div class="metric-value">${s.current_price}</div><div class="metric-label">Price</div></div>
+                <div class="metric"><div class="metric-value">${s.market_cap}</div><div class="metric-label">Mkt Cap</div></div>
+                <div class="metric"><div class="metric-value">${s.pe_ratio}x</div><div class="metric-label">P/E</div></div>
+            </div>
+            <div class="card-brief">${s.ai_brief.substring(0, 150)}...</div>
+            <div class="card-time">⏱ ${s.timestamp}</div>`;
+        card.onclick = () => showModal(s);
+        c.appendChild(card);
     });
 }
 
-function showModal(sig) {
-    document.getElementById('modal-title').innerText = `${sig.symbol} - Details`;
+function filterSignals(filter) {
+    if (filter === 'all') return renderSignals(allSignals);
+    if (filter === 'HIGH') return renderSignals(allSignals.filter(s => s.conviction === 'HIGH'));
+    renderSignals(allSignals.filter(s => s.direction === filter));
+}
+
+function showModal(s) {
     document.getElementById('modal-body').innerHTML = `
-        <p style="margin-bottom:0.5rem"><strong>Score:</strong> <span class="score-badge" style="font-size:1.2rem">${sig.score}</span></p>
-        <p style="margin-bottom:0.5rem"><strong>Direction:</strong> ${sig.direction}</p>
-        <p style="margin-bottom:0.5rem"><strong>Agents Triggered:</strong> ${sig.agents_triggered.join(', ')}</p>
-        <div style="margin-top:1rem; padding:1rem; background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px;">
-            <p><strong>AI Synthesis:</strong></p>
-            <p style="color:var(--text-secondary); margin-top:0.5rem;">${sig.summary}</p>
+        <div class="modal-header">
+            <div class="modal-symbol">${s.symbol}</div>
+            <div class="modal-company">${s.company_name} · ${s.sector}</div>
         </div>
-    `;
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">${s.description}</p>
+        <div class="modal-grid">
+            <div class="modal-stat"><div class="modal-stat-label">AI Score</div><div class="modal-stat-value" style="color:var(--accent)">${s.score}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">Direction</div><div class="modal-stat-value">${s.direction}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">Current Price</div><div class="modal-stat-value">${s.current_price}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">Market Cap</div><div class="modal-stat-value">${s.market_cap}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">P/E Ratio</div><div class="modal-stat-value">${s.pe_ratio}x</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">52W High</div><div class="modal-stat-value">${s.week_high}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">52W Low</div><div class="modal-stat-value">${s.week_low}</div></div>
+            <div class="modal-stat"><div class="modal-stat-label">Promoter</div><div class="modal-stat-value">${s.promoter_holding}</div></div>
+        </div>
+        <div class="modal-signals">
+            <h4>📋 Raw Agent Signals</h4>
+            ${s.raw_signals.map(sig => `<div class="modal-signal-item">${sig}</div>`).join('')}
+        </div>
+        <div class="modal-brief"><strong>AI Synthesis:</strong><br><br>${s.ai_brief}</div>`;
     document.getElementById('signal-modal').style.display = 'flex';
 }
 
-function sendChatMessage() {
+function sendChat() {
     const input = document.getElementById('chat-input');
     const msg = input.value.trim();
     if (!msg) return;
-
-    appendMessage(msg, 'user');
+    addMsg(msg, 'user');
     input.value = '';
-
-    const uiMsg = appendMessage('...', 'ai');
-
-    const eventSource = new EventSource(`${apiUrl}/chat/stream?query=${encodeURIComponent(msg)}`);
-
-    let fullResponse = '';
-    eventSource.onmessage = (e) => {
-        fullResponse += e.data;
-        uiMsg.innerText = fullResponse;
-    };
-
-    eventSource.onerror = (e) => {
-        eventSource.close();
-        if (fullResponse === '') uiMsg.innerText = "Error connecting to AI Analyst.";
-    };
+    const aiDiv = addMsg('', 'ai');
+    const src = new EventSource(`${API}/chat/stream?query=${encodeURIComponent(msg)}`);
+    let full = '';
+    src.onmessage = e => { full += e.data; aiDiv.innerHTML = `<span class="msg-label">AI Analyst</span>${full}`; document.getElementById('chat-window').scrollTop = 9999; };
+    src.onerror = () => { src.close(); if (!full) aiDiv.innerHTML = '<span class="msg-label">AI Analyst</span>Connection error — try again.'; };
 }
 
-function appendMessage(text, role) {
-    const chat = document.getElementById('chat-window');
-    const div = document.createElement('div');
-    div.className = `message ${role}`;
-    div.innerText = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div;
+function addMsg(text, role) {
+    const w = document.getElementById('chat-window');
+    const d = document.createElement('div');
+    d.className = `chat-msg ${role}`;
+    d.innerHTML = role === 'user' ? text : `<span class="msg-label">AI Analyst</span>${text}`;
+    w.appendChild(d);
+    w.scrollTop = 9999;
+    return d;
 }
 
 async function loadPortfolio() {
-    const content = document.getElementById('portfolio-content');
-    if (!content) return;
+    const el = document.getElementById('portfolio-content');
+    if (!el) return;
     try {
-        const response = await fetch(`${apiUrl}/portfolio/analyze`);
-        const data = await response.json();
-        let html = `<p><strong>Health:</strong> ${data.overall_health}</p><ul style="list-style:none; margin-top:0.5rem;">`;
-        data.holdings.forEach(h => {
-            html += `<li style="margin-bottom:0.3rem;">${h.symbol} <span style="float:right; color:var(--text-secondary)">${h.weight}% (Risk: ${h.risk_score})</span></li>`;
-        });
-        html += `</ul>`;
-        if (data.warnings.length > 0) {
-            html += `<div style="margin-top:1rem; padding:0.5rem; background:rgba(239, 68, 68, 0.1); border-left:2px solid var(--accent-red); font-size:0.8rem;">${data.warnings[0]}</div>`;
-        }
-        content.innerHTML = html;
-    } catch (err) {
-        content.innerHTML = "Could not load portfolio.";
-    }
+        const res = await fetch(`${API}/portfolio/analyze`);
+        const d = await res.json();
+        el.innerHTML = `
+            <div class="portfolio-summary">
+                <p><strong>Portfolio Value:</strong> ${d.total_value} &nbsp;|&nbsp; <strong>Return:</strong> <span style="color:var(--green)">${d.overall_return}</span></p>
+                <p><strong>Health:</strong> ${d.overall_health} &nbsp;|&nbsp; <strong>Diversification:</strong> ${d.diversification_score}/100</p>
+            </div>
+            ${d.holdings.map(h => `<div class="portfolio-holding">
+                <div><div class="holding-name">${h.symbol}</div><div class="holding-sector">${h.sector}</div></div>
+                <div class="holding-stats"><div class="holding-weight">${h.weight}%</div><div class="holding-return ${h.return_1y.startsWith('+') ? 'positive' : 'negative'}">${h.return_1y}</div></div>
+            </div>`).join('')}
+            ${d.warnings.map(w => `<div class="portfolio-warning">⚠️ ${w}</div>`).join('')}
+            ${d.recommendations.map(r => `<div class="portfolio-rec">💡 ${r}</div>`).join('')}`;
+    } catch { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">Backend waking up — refresh in 30s.</p>'; }
 }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

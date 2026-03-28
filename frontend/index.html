@@ -1,79 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Opportunity Radar | AI FinTech Dashboard</title>
+    <title>Opportunity Radar | AI-Powered Indian Market Intelligence</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 </head>
-<body class="dark-theme">
+
+<body>
     <div class="scanline"></div>
-    <header class="app-header">
-        <div class="logo">
-            <span class="logo-icon">📡</span>
-            <h1>Opportunity Radar <span class="badge">v1.0</span></h1>
-        </div>
-        <nav class="main-nav">
-            <a href="index.html" class="active">Signals</a>
-            <a href="charts.html">Analytics</a>
-            <a href="impact.html">Impact Model</a>
-        </nav>
-        <button id="scan-btn" class="primary-btn pulse">Run AI Scan</button>
-    </header>
-
-    <main class="dashboard">
-        <section class="pipeline-section">
-            <h2>AI Pipeline Status</h2>
-            <div class="pipeline-stages" id="pipeline-stages">
-                <div class="stage" id="stage-ingestion">1. Ingestion</div>
-                <div class="stage" id="stage-filing">2. Filings</div>
-                <div class="stage" id="stage-technical">3. Technicals</div>
-                <div class="stage" id="stage-sentiment">4. Sentiment</div>
-                <div class="stage" id="stage-scoring">5. Scoring</div>
-                <div class="stage" id="stage-synthesis">6. Synthesis</div>
+    <div class="grid-bg"></div>
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-pulse"></div><span class="logo-icon">📡</span>
+                <h1>Opportunity Radar</h1><span class="version-badge">v1.0</span>
             </div>
-        </section>
-
-        <div class="layout-grid">
-            <section class="signals-feed" id="signals-feed">
-                <h2>Live Opportunities</h2>
+            <div class="live-indicator"><span class="live-dot"></span><span>LIVE</span></div>
+        </div>
+        <nav id="main-nav">
+            <a href="index.html" class="nav-link active"><span class="nav-icon">⚡</span> Signals</a>
+            <a href="charts.html" class="nav-link"><span class="nav-icon">📊</span> Analytics</a>
+            <a href="impact.html" class="nav-link"><span class="nav-icon">🎯</span> Impact Model</a>
+        </nav>
+        <button id="scan-btn" class="scan-button"><span class="btn-icon">🔍</span><span>Run AI Scan</span></button>
+    </header>
+    <section id="pipeline-section">
+        <div class="pipeline-header">
+            <h2>AI Agent Pipeline</h2><span id="pipeline-status" class="pipeline-status">Ready</span>
+        </div>
+        <div class="pipeline-track">
+            <div class="pipeline-progress" id="pipeline-progress"></div>
+        </div>
+        <div class="pipeline-stages" id="pipeline-stages">
+            <div class="stage" data-stage="ingestion">
+                <div class="stage-icon">📥</div>
+                <div class="stage-label">Ingestion</div>
+                <div class="stage-desc">NSE/BSE Feeds</div>
+            </div>
+            <div class="stage-connector"></div>
+            <div class="stage" data-stage="filing">
+                <div class="stage-icon">📋</div>
+                <div class="stage-label">Filing Signals</div>
+                <div class="stage-desc">SEBI Disclosures</div>
+            </div>
+            <div class="stage-connector"></div>
+            <div class="stage" data-stage="technical">
+                <div class="stage-icon">📈</div>
+                <div class="stage-label">Technicals</div>
+                <div class="stage-desc">RSI, MACD, MA</div>
+            </div>
+            <div class="stage-connector"></div>
+            <div class="stage" data-stage="sentiment">
+                <div class="stage-icon">🧠</div>
+                <div class="stage-label">Sentiment</div>
+                <div class="stage-desc">Earnings Calls</div>
+            </div>
+            <div class="stage-connector"></div>
+            <div class="stage" data-stage="scoring">
+                <div class="stage-icon">🎯</div>
+                <div class="stage-label">Scoring</div>
+                <div class="stage-desc">Confluence 1.35x</div>
+            </div>
+            <div class="stage-connector"></div>
+            <div class="stage" data-stage="synthesis">
+                <div class="stage-icon">✨</div>
+                <div class="stage-label">AI Synthesis</div>
+                <div class="stage-desc">Investment Brief</div>
+            </div>
+        </div>
+    </section>
+    <main id="dashboard">
+        <div class="dashboard-grid">
+            <section id="signals-section">
+                <div class="section-header">
+                    <h2>📡 Live Opportunities</h2>
+                    <div class="filter-pills" id="filter-pills">
+                        <button class="pill active" data-filter="all">All</button>
+                        <button class="pill" data-filter="BULLISH">🟢 Bullish</button>
+                        <button class="pill" data-filter="BEARISH">🔴 Bearish</button>
+                        <button class="pill" data-filter="HIGH">🔥 High Conviction</button>
+                    </div>
+                </div>
                 <div id="signals-container">
-                    <p class="empty-state">Click 'Run AI Scan' to start the pipeline.</p>
+                    <div class="empty-state">
+                        <div class="empty-icon">📡</div>
+                        <h3>Awaiting Scan</h3>
+                        <p>Click <strong>Run AI Scan</strong> to execute the 6-stage agent pipeline.</p>
+                    </div>
                 </div>
             </section>
-
-            <aside class="sidebar">
-                <div class="ai-analyst" id="ai-analyst">
-                    <h2>SSE AI Analyst</h2>
-                    <div class="chat-window" id="chat-window">
-                        <div class="message system">System: AI Analyst connected. Ready for queries.</div>
+            <aside id="sidebar">
+                <div class="glass-card" id="ai-chat-card">
+                    <div class="card-header">
+                        <h3>🤖 AI Analyst</h3><span class="card-badge">Built-in AI</span>
                     </div>
-                    <div class="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="Ask about an opportunity..." autocomplete="off">
-                        <button id="send-btn">Send</button>
+                    <div id="chat-window">
+                        <div class="chat-msg system"><span class="msg-label">System</span>AI Analyst online. Ask about
+                            scoring, indicators, or signals.</div>
                     </div>
+                    <div class="chat-input-row"><input type="text" id="chat-input"
+                            placeholder="Ask about RSI, confluence..." autocomplete="off"><button
+                            id="send-btn">▶</button></div>
                 </div>
-
-                <div class="portfolio-panel" id="portfolio-panel">
-                    <h2>Portfolio Cross-Reference</h2>
+                <div class="glass-card" id="portfolio-card">
+                    <div class="card-header">
+                        <h3>💼 Portfolio X-Ray</h3>
+                    </div>
                     <div id="portfolio-content">
-                        Loading...
+                        <div class="loading-shimmer"></div>
                     </div>
                 </div>
             </aside>
         </div>
     </main>
-
-    <!-- Modal for Raw Signals -->
-    <div id="signal-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2 id="modal-title">Signal Details</h2>
+    <div id="signal-modal" class="modal-overlay">
+        <div class="modal-container"><button class="modal-close" id="modal-close">&times;</button>
             <div id="modal-body"></div>
         </div>
     </div>
-
+    <footer id="app-footer">
+        <p>Opportunity Radar v1.0 — 6 AI Agents | FastAPI + Pure JS | NSE/BSE Data (Simulated)</p>
+    </footer>
     <script src="app.js"></script>
 </body>
+
 </html>
