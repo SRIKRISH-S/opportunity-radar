@@ -1,11 +1,11 @@
-const apiUrl = 'http://localhost:8000/api';
+const apiUrl = 'https://opportunity-radar-api.onrender.com/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadPortfolio();
-    
+
     // Check if on dashboard page
     const scanBtn = document.getElementById('scan-btn');
-    if(scanBtn) {
+    if (scanBtn) {
         scanBtn.addEventListener('click', runScan);
         document.getElementById('send-btn').addEventListener('click', sendChatMessage);
         document.getElementById('chat-input').addEventListener('keypress', (e) => {
@@ -21,16 +21,16 @@ async function runScan() {
     const btn = document.getElementById('scan-btn');
     btn.disabled = true;
     btn.innerText = 'Running AI Agents...';
-    
+
     // Animate pipeline
     const stages = document.querySelectorAll('.stage');
     for (let i = 0; i < stages.length; i++) {
         stages[i].classList.add('active');
         await new Promise(r => setTimeout(r, 400));
-        if (i > 0) stages[i-1].classList.remove('active');
+        if (i > 0) stages[i - 1].classList.remove('active');
     }
-    stages[stages.length-1].classList.remove('active');
-    
+    stages[stages.length - 1].classList.remove('active');
+
     try {
         const response = await fetch(`${apiUrl}/signals/scan`);
         const signals = await response.json();
@@ -39,7 +39,7 @@ async function runScan() {
         console.error('Scan failed', err);
         document.getElementById('signals-container').innerHTML = '<p class="empty-state">Scan failed to reach backend.</p>';
     }
-    
+
     btn.disabled = false;
     btn.innerText = 'Run AI Scan';
 }
@@ -47,7 +47,7 @@ async function runScan() {
 function renderSignals(signals) {
     const container = document.getElementById('signals-container');
     container.innerHTML = '';
-    
+
     signals.forEach(sig => {
         const card = document.createElement('div');
         card.className = 'signal-card';
@@ -88,20 +88,20 @@ function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const msg = input.value.trim();
     if (!msg) return;
-    
+
     appendMessage(msg, 'user');
     input.value = '';
-    
+
     const uiMsg = appendMessage('...', 'ai');
-    
+
     const eventSource = new EventSource(`${apiUrl}/chat/stream?query=${encodeURIComponent(msg)}`);
-    
+
     let fullResponse = '';
     eventSource.onmessage = (e) => {
         fullResponse += e.data;
         uiMsg.innerText = fullResponse;
     };
-    
+
     eventSource.onerror = (e) => {
         eventSource.close();
         if (fullResponse === '') uiMsg.innerText = "Error connecting to AI Analyst.";
